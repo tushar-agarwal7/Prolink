@@ -1,6 +1,6 @@
 // Client/src/views/admin/meeting/index.js
 import { useEffect, useState } from 'react';
-import { DeleteIcon, ViewIcon } from '@chakra-ui/icons';
+import { DeleteIcon, ViewIcon, EditIcon } from '@chakra-ui/icons';
 import { Button, Menu, MenuButton, MenuItem, MenuList, Text, useDisclosure } from '@chakra-ui/react';
 import { HasAccess } from '../../../redux/accessUtils';
 import CommonCheckTable from '../../../components/reactTable/checktable';
@@ -9,6 +9,7 @@ import { CiMenuKebab } from 'react-icons/ci';
 import { Link, useNavigate } from 'react-router-dom';
 import MeetingAdvanceSearch from './components/MeetingAdvanceSearch';
 import AddMeeting from './components/Addmeeting';
+import EditMeeting from './components/EditMeeting';
 import CommonDeleteModel from 'components/commonDeleteModel';
 import { deleteManyApi } from 'services/api';
 import { toast } from 'react-toastify';
@@ -30,6 +31,10 @@ const Index = () => {
     const [displaySearchData, setDisplaySearchData] = useState(false);
     const [searchedData, setSearchedData] = useState([]);
     
+    // Edit state
+    const [edit, setEdit] = useState(false);
+    const [selectedId, setSelectedId] = useState(null);
+    
     // Get data from Redux store
     const { data, isLoading, error } = useSelector((state) => state.meetingData);
     const [permission] = HasAccess(['Meetings']);
@@ -43,6 +48,18 @@ const Index = () => {
                 <Menu isLazy>
                     <MenuButton><CiMenuKebab /></MenuButton>
                     <MenuList minW={'fit-content'} transform={"translate(1520px, 173px);"}>
+                        {permission?.update && (
+                            <MenuItem 
+                                py={2.5} 
+                                icon={<EditIcon fontSize={15} />}
+                                onClick={() => { 
+                                    setEdit(true); 
+                                    setSelectedId(row?.values?._id); 
+                                }}
+                            >
+                                Edit
+                            </MenuItem>
+                        )}
                         {permission?.view && (
                             <MenuItem 
                                 py={2.5} 
@@ -198,6 +215,19 @@ const Index = () => {
                 isOpen={isOpen} 
                 onClose={onClose} 
             />
+
+            {/* Edit Meeting Modal */}
+            {edit && (
+                <EditMeeting 
+                    setAction={setAction}
+                    isOpen={edit}
+                    onClose={() => {
+                        setEdit(false);
+                        setSelectedId(null);
+                    }}
+                    selectedId={selectedId}
+                />
+            )}
 
             {/* Delete model */}
             <CommonDeleteModel 
