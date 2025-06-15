@@ -1,4 +1,4 @@
-
+// Client/src/views/admin/contact/index.js
 import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Grid, GridItem, Text, useDisclosure, Menu, MenuButton, MenuItem, MenuList } from '@chakra-ui/react';

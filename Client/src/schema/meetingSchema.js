@@ -1,3 +1,4 @@
+// Client/src/schema/meetingSchema.js
 import * as yup from 'yup'
 
 export const MeetingSchema = yup.object({

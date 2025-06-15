@@ -1,3 +1,4 @@
+// Server/controllers/user/_routes.js
 const express = require('express');
 const user = require('./user');
 const auth = require('../../middelwares/auth');

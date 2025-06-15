@@ -1,193 +1,270 @@
-import { Box, Button, Flex, Grid, GridItem, Heading, Text } from "@chakra-ui/react";
-import Card from "components/card/Card";
-import { HSeparator } from "components/separator/Separator";
-import Spinner from "components/spinner/Spinner";
-import moment from "moment";
-import { useEffect, useState } from "react";
-import { IoIosArrowBack } from "react-icons/io";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { HasAccess } from "../../../redux/accessUtils";
-import { getApi } from "services/api";
-import { DeleteIcon } from "@chakra-ui/icons";
-import { deleteApi } from "services/api";
-import CommonDeleteModel from "components/commonDeleteModel";
-import { FaFilePdf } from "react-icons/fa";
-import html2pdf from "html2pdf.js";
-const View = () => {
+// Client/src/views/admin/meeting/View.js
+import {
+    Box,
+    Button,
+    Flex,
+    Grid,
+    GridItem,
+    Heading,
+    Text,
+    useColorModeValue,
+    VStack,
+    HStack,
+    Badge,
+    Divider
+} from '@chakra-ui/react';
+import Card from 'components/card/Card';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getApi } from 'services/api';
+import { toast } from 'react-toastify';
+import moment from 'moment';
+import Spinner from 'components/spinner/Spinner';
 
-    const param = useParams()
+const MeetingView = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [data, setData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const [data, setData] = useState()
-    const [deleteMany, setDeleteMany] = useState(false);
-    const user = JSON.parse(localStorage.getItem("user"))
-    const [isLoding, setIsLoding] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const navigate = useNavigate()
-    const params = useParams();
+    const textColor = useColorModeValue("secondaryGray.900", "white");
+    const textColorSecondary = "gray.400";
 
-
-    const fetchData = async () => {
-        setIsLoding(true)
-        let response = await getApi('api/meeting/view/', param.id)
-        setData(response?.data);
-        setIsLoding(false)
-    }
-
-    useEffect(() => {
-        fetchData()
-    }, [])
-
-    const generatePDF = () => {
-        setLoading(true)
-        const element = document.getElementById("reports");
-        const hideBtn = document.getElementById("hide-btn");
-        if (element) {
-            hideBtn.style.display = 'none';
-            html2pdf()
-                .from(element)
-                .set({
-                    margin: [0, 0, 0, 0],
-                    filename: `Meeting_Details_${moment().format("DD-MM-YYYY")}.pdf`,
-                    image: { type: "jpeg", quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-                    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-                })
-                .save().then(() => {
-                    setLoading(false)
-                    hideBtn.style.display = '';
-                })
-            // }, 500);
-        } else {
-            console.error("Element with ID 'reports' not found.");
-            setLoading(false)
+    const fetchMeetingData = async () => {
+        try {
+            setIsLoading(true);
+            const response = await getApi(`api/meeting/view/${id}`);
+            
+            if (response && response.status === 200) {
+                setData(response.data);
+            } else {
+                toast.error("Failed to fetch meeting details");
+                navigate('/metting');
+            }
+        } catch (error) {
+            console.error('Error fetching meeting:', error);
+            toast.error("Failed to fetch meeting details");
+            navigate('/metting');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleDeleteMeeting = async (ids) => {
-        try {
-            setIsLoding(true)
-            let response = await deleteApi('api/meeting/delete/', params.id)
-            if (response.status === 200) {
-                setDeleteMany(false)
-                navigate(-1)
-            }
-        } catch (error) {
-            console.log(error)
+    useEffect(() => {
+        if (id) {
+            fetchMeetingData();
         }
-        finally {
-            setIsLoding(false)
-        }
+    }, [id]);
+
+    const formatDate = (dateString) => {
+        return moment(dateString).format('MMMM DD, YYYY hh:mm A');
+    };
+
+    const formatTimestamp = (timestamp) => {
+        return moment(timestamp).format('MMMM DD, YYYY hh:mm A');
+    };
+
+    if (isLoading) {
+        return (
+            <Flex justify="center" align="center" h="50vh">
+                <Spinner />
+            </Flex>
+        );
     }
 
-    const [permission, contactAccess, leadAccess] = HasAccess(['Meetings', 'Contacts', 'Leads'])
+    if (!data) {
+        return (
+            <Flex justify="center" align="center" h="50vh">
+                <Text>Meeting not found</Text>
+            </Flex>
+        );
+    }
 
     return (
-        <>
-            {isLoding ?
-                <Flex justifyContent={'center'} alignItems={'center'} width="100%" >
-                    <Spinner />
-                </Flex> : <>
+        <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
+            {/* Header */}
+            <Flex justify="space-between" align="center" mb={6}>
+                <Heading size="lg" color={textColor}>
+                    Meeting Details
+                </Heading>
+                <Button
+                    variant="outline"
+                    colorScheme="brand"
+                    onClick={() => navigate('/metting')}
+                >
+                    Back to Meetings
+                </Button>
+            </Flex>
 
-                    <Grid templateColumns="repeat(4, 1fr)" gap={3} id="reports">
-                        <GridItem colSpan={{ base: 4 }}>
-                            <Heading size="lg" m={3}>
-                                {data?.agenda || ""}
-                            </Heading>
-                        </GridItem>
-                        <GridItem colSpan={{ base: 4 }}>
-                            <Card>
-                                <Grid gap={4}>
-                                    <GridItem colSpan={2}>
-                                        <Box>
-                                            <Flex justifyContent={"space-between"}>
-                                                <Heading size="md" mb={3}>
-                                                    Meeting Details
-                                                </Heading>
-                                                <Box id="hide-btn">
-                                                    <Button leftIcon={<FaFilePdf />} size='sm' variant="brand" onClick={generatePDF} disabled={loading}>
-                                                        {loading ? "Please Wait..." : "Print as PDF"}
-                                                    </Button>
-                                                    <Button leftIcon={<IoIosArrowBack />} size='sm' variant="brand" onClick={() => navigate(-1)} style={{ marginLeft: 10 }}>
-                                                        Back
-                                                    </Button>
-                                                </Box>
-                                            </Flex>
-                                            <HSeparator />
-                                        </Box>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> Agenda </Text>
-                                        <Text>{data?.agenda ? data?.agenda : ' - '}</Text>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> Created By </Text>
-                                        <Text>{data?.createdByName ? data?.createdByName : ' - '}</Text>
-                                    </GridItem>
+            <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
+                {/* Main Meeting Information */}
+                <GridItem>
+                    <Card>
+                        <VStack spacing={6} align="stretch">
+                            {/* Meeting Agenda */}
+                            <Box>
+                                <Text fontSize="lg" fontWeight="bold" color={textColor} mb={2}>
+                                    Agenda
+                                </Text>
+                                <Text color={textColorSecondary}>
+                                    {data.agenda || 'No agenda specified'}
+                                </Text>
+                            </Box>
 
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> DateTime </Text>
-                                        <Text> {data?.dateTime ? moment(data?.dateTime).format('DD-MM-YYYY  h:mma ') : ' - '} [{data?.dateTime ? moment(data?.dateTime).toNow() : ' - '}]</Text>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> Timestamp </Text>
-                                        <Text> {data?.timestamp ? moment(data?.timestamp).format('DD-MM-YYYY  h:mma ') : ' - '} [{data?.timestamp ? moment(data?.timestamp).toNow() : ' - '}]</Text>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> Location </Text>
-                                        <Text>{data?.location ? data?.location : ' - '}</Text>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}>  Notes </Text>
-                                        <Text>{data?.notes ? data?.notes : ' - '}</Text>
-                                    </GridItem>
-                                    <GridItem colSpan={{ base: 2, md: 1 }}>
-                                        <Text fontSize="sm" fontWeight="bold" color={'blackAlpha.900'}> Attendes </Text>
-                                        {data?.related === 'Contact' && contactAccess?.view ? data?.attendes && data?.attendes.map((item) => {
-                                            return (
-                                                <Link to={`/contactView/${item._id}`}>
-                                                    <Text color='brand.600' sx={{ '&:hover': { color: 'blue.500', textDecoration: 'underline' } }}>{item.firstName + ' ' + item.lastName}</Text>
-                                                </Link>
-                                            )
-                                        }) : data?.related === 'Lead' && leadAccess?.view ? data?.attendesLead && data?.attendesLead.map((item) => {
-                                            return (
-                                                <Link to={`/leadView/${item._id}`}>
-                                                    <Text color='brand.600' sx={{ '&:hover': { color: 'blue.500', textDecoration: 'underline' } }}>{item.leadName}</Text>
-                                                </Link>
-                                            )
-                                        }) : data?.related === 'contact' ? data?.attendes && data?.attendes.map((item) => {
-                                            return (
-                                                <Text color='blackAlpha.900' >{item.firstName + ' ' + item.lastName}</Text>
-                                            )
-                                        }) : data?.related === 'lead' ? data?.attendesLead && data?.attendesLead.map((item) => {
-                                            return (
-                                                <Text color='blackAlpha.900' >{item.leadName}</Text>
-                                            )
-                                        }) : '-'}
-                                    </GridItem>
-                                    {/* <Grid templateColumns={'repeat(2, 1fr)'} gap={4} id="reports">
+                            <Divider />
 
-                                    </Grid> */}
-                                </Grid>
-                            </Card>
-                        </GridItem>
+                            {/* Date and Time */}
+                            <HStack justify="space-between">
+                                <Box>
+                                    <Text fontSize="md" fontWeight="bold" color={textColor} mb={1}>
+                                        Scheduled Date & Time
+                                    </Text>
+                                    <Text color={textColorSecondary}>
+                                        {data.dateTime ? formatDate(data.dateTime) : 'Not scheduled'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="md" fontWeight="bold" color={textColor} mb={1}>
+                                        Created On
+                                    </Text>
+                                    <Text color={textColorSecondary}>
+                                        {formatTimestamp(data.timestamp)}
+                                    </Text>
+                                </Box>
+                            </HStack>
 
-                    </Grid>
-                    {(user.role === 'superAdmin' || (permission?.update || permission?.delete)) && <Card mt={3}>
-                        <Grid templateColumns="repeat(6, 1fr)" gap={1}>
-                            <GridItem colStart={6} >
-                                <Flex justifyContent={"right"}>
-                                    {(user.role === 'superAdmin' || permission?.delete) ? <Button size='sm' style={{ background: 'red.800' }} onClick={() => setDeleteMany(true)} leftIcon={<DeleteIcon />} colorScheme="red" >Delete</Button> : ''}
-                                </Flex>
-                            </GridItem>
-                        </Grid>
+                            <Divider />
+
+                            {/* Location */}
+                            <Box>
+                                <Text fontSize="md" fontWeight="bold" color={textColor} mb={2}>
+                                    Location
+                                </Text>
+                                <Text color={textColorSecondary}>
+                                    {data.location || 'No location specified'}
+                                </Text>
+                            </Box>
+
+                            <Divider />
+
+                            {/* Notes */}
+                            <Box>
+                                <Text fontSize="md" fontWeight="bold" color={textColor} mb={2}>
+                                    Notes
+                                </Text>
+                                <Text color={textColorSecondary}>
+                                    {data.notes || 'No notes added'}
+                                </Text>
+                            </Box>
+                        </VStack>
                     </Card>
-                    }
+                </GridItem>
 
-                </>}
-            {/* Delete model */}
-            <CommonDeleteModel isOpen={deleteMany} onClose={() => setDeleteMany(false)} type='Meetings' handleDeleteData={handleDeleteMeeting} ids={params.id} />
-        </>
+                {/* Sidebar Information */}
+                <GridItem>
+                    <VStack spacing={4} align="stretch">
+                        {/* Created By */}
+                        <Card>
+                            <VStack spacing={3} align="stretch">
+                                <Text fontSize="md" fontWeight="bold" color={textColor}>
+                                    Created By
+                                </Text>
+                                <Text color={textColorSecondary}>
+                                    {data.createBy ? 
+                                        `${data.createBy.firstName || ''} ${data.createBy.lastName || ''}`.trim() || 
+                                        data.createBy.username : 
+                                        'Unknown User'
+                                    }
+                                </Text>
+                            </VStack>
+                        </Card>
+
+                        {/* Related To */}
+                        <Card>
+                            <VStack spacing={3} align="stretch">
+                                <Text fontSize="md" fontWeight="bold" color={textColor}>
+                                    Related To
+                                </Text>
+                                <Badge 
+                                    colorScheme={data.related === 'Contact' ? 'blue' : 'green'} 
+                                    variant="solid"
+                                    width="fit-content"
+                                >
+                                    {data.related || 'None'}
+                                </Badge>
+                            </VStack>
+                        </Card>
+
+                        {/* Attendees */}
+                        <Card>
+                            <VStack spacing={3} align="stretch">
+                                <Text fontSize="md" fontWeight="bold" color={textColor}>
+                                    Attendees
+                                </Text>
+                                
+                                {/* Contact Attendees */}
+                                {data.attendes && data.attendes.length > 0 && (
+                                    <Box>
+                                        <Text fontSize="sm" fontWeight="semibold" color={textColor} mb={2}>
+                                            Contacts:
+                                        </Text>
+                                        {data.attendes.map((contact, index) => (
+                                            <Text key={index} color={textColorSecondary} fontSize="sm">
+                                                • {contact.firstName} {contact.lastName}
+                                                {contact.email && ` (${contact.email})`}
+                                            </Text>
+                                        ))}
+                                    </Box>
+                                )}
+
+                                {/* Lead Attendees */}
+                                {data.attendesLead && data.attendesLead.length > 0 && (
+                                    <Box>
+                                        <Text fontSize="sm" fontWeight="semibold" color={textColor} mb={2}>
+                                            Leads:
+                                        </Text>
+                                        {data.attendesLead.map((lead, index) => (
+                                            <Text key={index} color={textColorSecondary} fontSize="sm">
+                                                • {lead.leadName}
+                                                {lead.leadEmail && ` (${lead.leadEmail})`}
+                                            </Text>
+                                        ))}
+                                    </Box>
+                                )}
+
+                                {(!data.attendes || data.attendes.length === 0) && 
+                                 (!data.attendesLead || data.attendesLead.length === 0) && (
+                                    <Text color={textColorSecondary} fontSize="sm">
+                                        No attendees specified
+                                    </Text>
+                                )}
+                            </VStack>
+                        </Card>
+
+                        {/* Meeting Status */}
+                        <Card>
+                            <VStack spacing={3} align="stretch">
+                                <Text fontSize="md" fontWeight="bold" color={textColor}>
+                                    Status
+                                </Text>
+                                <Badge 
+                                    colorScheme={
+                                        new Date(data.dateTime) > new Date() ? 'green' : 
+                                        new Date(data.dateTime).toDateString() === new Date().toDateString() ? 'orange' : 'red'
+                                    }
+                                    variant="solid"
+                                    width="fit-content"
+                                >
+                                    {new Date(data.dateTime) > new Date() ? 'Upcoming' : 
+                                     new Date(data.dateTime).toDateString() === new Date().toDateString() ? 'Today' : 'Past'}
+                                </Badge>
+                            </VStack>
+                        </Card>
+                    </VStack>
+                </GridItem>
+            </Grid>
+        </Box>
     );
 };
 
-export default View;
+export default MeetingView;

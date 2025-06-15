@@ -1,3 +1,4 @@
+// Server/controllers/user/user.js
 const User = require('../../model/schema/user')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
