@@ -1,11 +1,14 @@
 
 
 ### 1. Meeting Creation Success
-![Meeting Created](./screenshots/04-meeting-created.png)
+![Meeting Created](/Client/public/createMeet.png)
 
 ### 2. Meeting Detail View
-![Meeting View](./screenshots/05-meeting-detail-view.png)
-*Detailed view of meeting information with attendees*
+![Meeting View](/Client/public/meetDetails.png)
+
+### 3. Meddting Update
+![Meeting Update](/Client/public/updateMeet.png)
+
 
 ## 📦 Installation & Setup
 
